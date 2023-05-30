@@ -1,6 +1,7 @@
 """Handles all file writing and post-installation processing."""
 
 import compileall
+import hashlib
 import io
 import os
 from pathlib import Path
@@ -119,8 +120,7 @@ class SchemeDictionaryDestination(WheelDestination):
         :param interpreter: the interpreter to use for generating scripts
         :param script_kind: the "kind" of launcher script to use
         :param hash_algorithm: the hashing algorithm to use, which is a member
-            of :any:`hashlib.algorithms_available` (ideally from
-            :any:`hashlib.algorithms_guaranteed`).
+            of :any:`hashlib.algorithms_guaranteed`.
         :param bytecode_optimization_levels: Compile cached bytecode for
             installed .py files with these optimization levels. The bytecode
             is specific to the minor version of Python (e.g. 3.10) used to
@@ -129,6 +129,8 @@ class SchemeDictionaryDestination(WheelDestination):
             is expected to be the filesystem root at runtime, so embedded paths
             will be written as though this was the root.
         """
+        if hash_algorithm not in hashlib.algorithms_guaranteed:
+            raise ValueError(f"Invalid hash algorithm {hash_algorithm}")
         self.scheme_dict = scheme_dict
         self.interpreter = interpreter
         self.script_kind = script_kind
