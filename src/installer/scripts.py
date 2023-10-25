@@ -4,6 +4,7 @@ import io
 import os
 import shlex
 import zipfile
+from dataclasses import dataclass, field
 from importlib.resources import read_binary
 from typing import TYPE_CHECKING, Mapping, Optional, Tuple
 
@@ -80,35 +81,24 @@ class InvalidScript(ValueError):
     """Raised if the user provides incorrect script section or kind."""
 
 
+@dataclass
 class Script:
-    """Describes a script based on an entry point declaration."""
+    """Describes a script based on an entry point declaration.
 
-    __slots__ = ("name", "module", "attr", "section")
+    Construct a Script object.
 
-    def __init__(
-        self, name: str, module: str, attr: str, section: "ScriptSection"
-    ) -> None:
-        """Construct a Script object.
+    :param name: name of the script
+    :param module: module path, to load the entry point from
+    :param attr: final attribute access, for the entry point
+    :param section: Denotes the "entry point section" where this was specified.
+        Valid values are ``"gui"`` and ``"console"``.
+    :type section: str
+    """
 
-        :param name: name of the script
-        :param module: module path, to load the entry point from
-        :param attr: final attribute access, for the entry point
-        :param section: Denotes the "entry point section" where this was specified.
-            Valid values are ``"gui"`` and ``"console"``.
-        :type section: str
-
-        """
-        self.name = name
-        self.module = module
-        self.attr = attr
-        self.section = section
-
-    def __repr__(self) -> str:
-        return "Script(name={!r}, module={!r}, attr={!r}".format(
-            self.name,
-            self.module,
-            self.attr,
-        )
+    name: str
+    module: str
+    attr: str
+    section: "ScriptSection" = field(repr=False)
 
     def _get_launcher_data(self, kind: "LauncherKind") -> Optional[bytes]:
         if kind == "posix":

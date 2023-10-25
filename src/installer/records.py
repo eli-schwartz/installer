@@ -4,6 +4,7 @@ import base64
 import csv
 import hashlib
 import os
+from dataclasses import dataclass
 from typing import BinaryIO, Iterable, Iterator, Optional, Tuple, cast
 
 from installer.utils import copyfileobj_with_hashing, get_stream_length
@@ -16,47 +17,36 @@ __all__ = [
 ]
 
 
+@dataclass
 class InvalidRecordEntry(Exception):
     """Raised when a RecordEntry is not valid, due to improper element values or count."""
 
-    def __init__(
-        self, elements: Iterable[str], issues: Iterable[str]
-    ) -> None:  # noqa: D107
-        super().__init__(", ".join(issues))
-        self.issues = issues
-        self.elements = elements
-
-    def __repr__(self) -> str:
-        return "InvalidRecordEntry(elements={!r}, issues={!r})".format(
-            self.elements, self.issues
-        )
+    elements: Iterable[str]
+    issues: Iterable[str]
 
 
+    def __post_init__(self) -> None:
+        super().__init__(", ".join(self.issues))
+
+
+@dataclass
 class Hash:
-    """Represents the "hash" element of a RecordEntry."""
+    """Represents the "hash" element of a RecordEntry.
 
-    def __init__(self, name: str, value: str) -> None:
-        """Construct a ``Hash`` object.
+    Construct a ``Hash`` object.
 
-        Most consumers should use :py:meth:`Hash.parse` instead, since no
-        validation or parsing is performed by this constructor.
+    Most consumers should use :py:meth:`Hash.parse` instead, since no
+    validation or parsing is performed by this constructor.
 
-        :param name: name of the hash function
-        :param value: hashed value
-        """
-        self.name = name
-        self.value = value
+    :param name: name of the hash function
+    :param value: hashed value
+    """
+
+    name: str
+    value: str
 
     def __str__(self) -> str:
         return f"{self.name}={self.value}"
-
-    def __repr__(self) -> str:
-        return f"Hash(name={self.name!r}, value={self.value!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Hash):
-            return NotImplemented
-        return self.value == other.value and self.name == other.name
 
     def validate(self, data: bytes) -> bool:
         """Validate that ``data`` matches this instance.
@@ -85,27 +75,25 @@ class Hash:
         return cls(name, value)
 
 
+@dataclass
 class RecordEntry:
-    """Represents a single record in a RECORD file.
+    r"""Represents a single record in a RECORD file.
 
     A list of :py:class:`RecordEntry` objects fully represents a RECORD file.
+
+    Construct a ``RecordEntry`` object.
+
+    Most consumers should use :py:meth:`RecordEntry.from_elements`, since no
+    validation or parsing is performed by this constructor.
+
+    :param path: file's path
+    :param hash\_: hash of the file's contents
+    :param size: file's size in bytes
     """
 
-    def __init__(self, path: str, hash_: Optional[Hash], size: Optional[int]) -> None:
-        r"""Construct a ``RecordEntry`` object.
-
-        Most consumers should use :py:meth:`RecordEntry.from_elements`, since no
-        validation or parsing is performed by this constructor.
-
-        :param path: file's path
-        :param hash\_: hash of the file's contents
-        :param size: file's size in bytes
-        """
-        super().__init__()
-
-        self.path = path
-        self.hash_ = hash_
-        self.size = size
+    path: str
+    hash_: Optional[Hash]
+    size: Optional[int]
 
     def to_row(self, path_prefix: Optional[str] = None) -> Tuple[str, str, str]:
         """Convert this into a 3-element tuple that can be written in a RECORD file.
